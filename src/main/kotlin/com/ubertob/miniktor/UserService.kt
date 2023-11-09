@@ -1,6 +1,7 @@
 package com.ubertob.miniktor
 
 import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDate
@@ -31,5 +32,11 @@ class UserService {
         }
 
         return newUser ?: throw IllegalStateException("User could not be created")
+    }
+
+    fun getUserById(id: Int): User? = transaction {
+        Users.select { Users.id eq id }
+            .map { User(it[Users.id].value, it[Users.name], it[Users.dateOfBirth]) }
+            .singleOrNull()
     }
 }

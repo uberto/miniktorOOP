@@ -14,23 +14,26 @@ import io.ktor.http.*
 import java.time.LocalDate
 
 fun main() {
-    val userService = UserService()
     initDatabase()
+    val userService = UserService()
     insertFakeData(userService)
+    val userView = UserView()
+    val controller = UserController(userService, userView)
     embeddedServer(Netty, port = 8080) {
         routing {
             staticResources("/static", "static")
 
             get("/") {
-                call.respond(HtmlContent(HttpStatusCode.OK, UserView.indexHtml()))
-
+                call.respond(HtmlContent(HttpStatusCode.OK, userView.indexHtml()))
             }
 
-            // Endpoint that htmx will call to load the user list
             get("/users") {
-                 val users = userService.getAllUsers()
-                call.respond(HtmlContent(HttpStatusCode.OK, UserView.usersPage(users)))
+                call.respond(controller.getAllUsers())
+            }
 
+            get("/user/{id}") {
+                val id = call.parameters["id"]?.toIntOrNull()
+                call.respond(controller.getUserById(id))
             }
         }
     }.start(wait = true)
@@ -38,9 +41,9 @@ fun main() {
 
 fun insertFakeData(userService: UserService) {
     userService.addUser(
-        "Alice", LocalDate.of(1999,11,11)
+        "Alice", LocalDate.of(1999, 11, 11)
     )
     userService.addUser(
-        "Bob", LocalDate.of(2001,1,31)
+        "Bob", LocalDate.of(2001, 1, 31)
     )
 }
