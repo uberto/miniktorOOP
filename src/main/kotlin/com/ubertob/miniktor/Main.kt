@@ -9,35 +9,48 @@ import io.ktor.server.http.content.*
 import io.ktor.server.netty.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.html.*
+import io.ktor.html.HtmlContent
 import io.ktor.http.*
+import io.ktor.server.request.*
+import kotlinx.html.*
 import java.time.LocalDate
 
 fun main() {
     initDatabase()
-    val userService = UserService()
-    insertFakeData(userService)
-    val userView = UserView()
-    val controller = UserController(userService, userView)
+
     embeddedServer(Netty, port = 8080) {
         routing {
             staticResources("/static", "static")
 
-            get("/") {
-                call.respond(HtmlContent(HttpStatusCode.OK, userView.indexHtml()))
-            }
+            bindGET("/") { indexPage()}
 
-            get("/users") {
-                call.respond(controller.getAllUsers())
-            }
+            bindGET("/users") {getAllUsers()}
 
-            get("/user/{id}") {
-                val id = call.parameters["id"]?.toIntOrNull()
-                call.respond(controller.getUserById(id))
-            }
+            bindGET("/user/{id}") {getUserById(queryParameters["id"]?.toIntOrNull())}
+
         }
     }.start(wait = true)
 }
+
+private fun Routing.bindGET(path: String, htmlContent: ApplicationRequest.() -> HtmlContent) {
+    get(path) {
+        call.respond(htmlContent(call.request))
+    }
+}
+
+private fun indexPage() = HtmlContent(HttpStatusCode.OK, {
+    head {
+        title("Welcome to MiniKtor")
+    }
+    body {
+        h1 {
+            +"Pages"
+        }
+        div {
+            a("users") { +"User List" }
+        }
+    }
+})
 
 fun insertFakeData(userService: UserService) {
     userService.addUser(

@@ -3,19 +3,6 @@ package com.ubertob.miniktor
 import kotlinx.html.*
 
 class UserView {
-    fun indexHtml(): HTML.() -> Unit = {
-        head {
-            title("Welcome to MiniKtor")
-        }
-        body {
-            h1 {
-                +"Pages"
-            }
-            div {
-                a("users") { +"User List" }
-            }
-        }
-    }
 
 
     fun usersPage(users: List<User>): HTML.() -> Unit = {

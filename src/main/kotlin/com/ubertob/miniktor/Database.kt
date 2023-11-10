@@ -1,5 +1,6 @@
 package com.ubertob.miniktor
 
+import com.ubertob.miniktor.com.ubertob.miniktor.insertFakeData
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -15,6 +16,8 @@ fun initDatabase() {
     transaction {
         SchemaUtils.create(Users)
     }
+    val userService = UserService()
+    insertFakeData(userService)
 }
 
 object Users : IntIdTable() {

@@ -11,7 +11,6 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 
-class UserController(private val userService: UserService, private val userView: UserView) {
     fun getAllUsers(): HtmlContent {
         val users = transaction {
             Users.selectAll().map {
@@ -54,13 +53,13 @@ class UserController(private val userService: UserService, private val userView:
             ?.let(::userResponse)
             ?: errorResponse("User not found")
 
-    private fun fetchUserFromDb(id: Int?) = transaction {
+    fun fetchUserFromDb(id: Int?) = transaction {
         Users.select { Users.id eq id }
             .map { User(it[Users.id].value, it[Users.name], it[Users.dateOfBirth]) }
             .singleOrNull()
     }
 
-    private fun userResponse(user: User): HtmlContent =
+    fun userResponse(user: User): HtmlContent =
         HtmlContent(HttpStatusCode.OK) {
             head {
                 title("User Details")
@@ -79,7 +78,7 @@ class UserController(private val userService: UserService, private val userView:
             }
         }
 
-    private fun errorResponse(message: String) = HtmlContent(HttpStatusCode.BadRequest) {
+     fun errorResponse(message: String) = HtmlContent(HttpStatusCode.BadRequest) {
         head {
             title("Error")
         }
@@ -95,4 +94,4 @@ class UserController(private val userService: UserService, private val userView:
         }
     }
 
-}
+
