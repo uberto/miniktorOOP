@@ -34,9 +34,4 @@ class UserService {
         return newUser ?: throw IllegalStateException("User could not be created")
     }
 
-    fun getUserById(id: Int): User? = transaction {
-        Users.select { Users.id eq id }
-            .map { User(it[Users.id].value, it[Users.name], it[Users.dateOfBirth]) }
-            .singleOrNull()
-    }
 }
