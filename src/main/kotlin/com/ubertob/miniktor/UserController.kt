@@ -1,11 +1,7 @@
-package com.ubertob.miniktor.com.ubertob.miniktor
+package com.ubertob.miniktor
 
-import com.ubertob.miniktor.UserService
-import com.ubertob.miniktor.UserView
 import io.ktor.html.*
 import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.response.*
 
 class UserController(private val userService: UserService, private val userView: UserView) {
     fun getAllUsers(): HtmlContent {
