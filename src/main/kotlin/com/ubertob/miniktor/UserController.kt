@@ -5,20 +5,24 @@ import io.ktor.http.*
 import org.jetbrains.exposed.sql.Transaction
 
 fun Transaction.getAllUsersPage(): HtmlContent {
-        val users = getAllUsers()
-        return HtmlContent(HttpStatusCode.OK, usersPage(users))
-    }
+    val usersRes = getAllUsers()
 
-    fun Transaction.getUserPage(id: Int?): HtmlContent {
-        if (id == null) {
-            return HtmlContent(HttpStatusCode.BadRequest, errorPage("Invalid ID format"))
+    return when (usersRes) {
+        is Success -> HtmlContent(HttpStatusCode.OK, usersPage(usersRes.value)).asSuccess()
+        is Failure -> ResponseError("Error getting users", HttpStatusCode.NotFound, usersRes.error).asFailure()
+    }.orThrow()
+}
+
+fun Transaction.getUserPage(id: Int?): HtmlContent =
+    if (id == null) {
+        ResponseError("Invalid ID format", HttpStatusCode.BadRequest)
+            .asFailure()
+    } else {
+        val userRes = getUserById(id)
+        when (userRes) {
+            is Success -> HtmlContent(HttpStatusCode.OK, userPage(userRes.value)).asSuccess()
+            is Failure -> ResponseError("User not found", HttpStatusCode.NotFound, userRes.error).asFailure()
         }
-        val user = getUserById(id)
-        if (user != null) {
-            return HtmlContent(HttpStatusCode.OK, userPage(user))
-        } else {
-            return HtmlContent(HttpStatusCode.NotFound, errorPage("User not found"))
-        }
-    }
+    }.orThrow()
 
 

@@ -7,19 +7,33 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDate
 
-fun Transaction.getAllUsers(): List<User> =
-    Users.selectAll().map {
-        User(
-            id = it[Users.id].value,
-            name = it[Users.name],
-            dateOfBirth = it[Users.dateOfBirth]
-        )
+fun Transaction.getAllUsers(): Result<List<User>> =
+    try {
+        Users.selectAll().map {
+            User(
+                id = it[Users.id].value,
+                name = it[Users.name],
+                dateOfBirth = it[Users.dateOfBirth]
+            )
+        }.asSuccess()
+    } catch (e: Exception) {
+        DbError("Error loading all users", e).asFailure()
     }
 
-fun Transaction.getUserById(id: Int): User? =
-    Users.select { Users.id eq id }
-        .map { User(it[Users.id].value, it[Users.name], it[Users.dateOfBirth]) }
-        .singleOrNull()
+fun Transaction.getUserById(id: Int): Result<User> =
+    try {
+        Users.select { Users.id eq id }
+            .map {
+                User(
+                    id = it[Users.id].value,
+                    name = it[Users.name],
+                    dateOfBirth = it[Users.dateOfBirth]
+                )
+            }
+            .single().asSuccess()
+    } catch (e: Exception) {
+        DbError("Error loading user $id", e).asFailure()
+    }
 
 fun Transaction.addUser(name: String, dateOfBirth: LocalDate): User {
     val userId = Users.insert {
