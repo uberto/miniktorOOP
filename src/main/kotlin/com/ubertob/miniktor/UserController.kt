@@ -13,13 +13,12 @@ fun Transaction.getAllUsersPage(): HtmlContent {
         if (id == null) {
             return HtmlContent(HttpStatusCode.BadRequest, errorPage("Invalid ID format"))
         }
-
         val user = getUserById(id)
         if (user != null) {
             return HtmlContent(HttpStatusCode.OK, userPage(user))
         } else {
             return HtmlContent(HttpStatusCode.NotFound, errorPage("User not found"))
         }
-
-
     }
+
+

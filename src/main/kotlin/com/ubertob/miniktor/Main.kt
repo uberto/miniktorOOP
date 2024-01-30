@@ -30,7 +30,8 @@ fun main() {
             }
 
             get("/user/{id}") {
-                val id = call.parameters["id"]?.toIntOrNull()
+                val id = call.parameters["id"]
+                    ?.toIntOrNull()
                 call.respond(
                     transaction {getUserPage(id) }
                 )
@@ -44,6 +45,7 @@ fun insertSomeData() =
         addUser(
             "Alice", LocalDate.of(1999, 11, 11)
         )
+
         addUser(
             "Bob", LocalDate.of(2001, 1, 31)
         )
