@@ -8,39 +8,43 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.html.*
 import io.ktor.http.*
+import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDate
 
 fun main() {
     initDatabase()
-    val userService = UserService()
-    insertFakeData(userService)
-    val userView = UserView()
-    val controller = UserController(userService, userView)
+    insertSomeData()
+
     embeddedServer(Netty, port = 8080) {
         routing {
             staticResources("/static", "static")
 
             get("/") {
-                call.respond(HtmlContent(HttpStatusCode.OK, userView.indexHtml()))
+                call.respond(HtmlContent(HttpStatusCode.OK, indexHtml()))
             }
 
             get("/users") {
-                call.respond(controller.getAllUsers())
+                call.respond(
+                    transaction {getAllUsersPage() }
+                )
             }
 
             get("/user/{id}") {
                 val id = call.parameters["id"]?.toIntOrNull()
-                call.respond(controller.getUserById(id))
+                call.respond(
+                    transaction {getUserPage(id) }
+                )
             }
         }
     }.start(wait = true)
 }
 
-fun insertFakeData(userService: UserService) {
-    userService.addUser(
-        "Alice", LocalDate.of(1999, 11, 11)
-    )
-    userService.addUser(
-        "Bob", LocalDate.of(2001, 1, 31)
-    )
-}
+fun insertSomeData() =
+    transaction {
+        addUser(
+            "Alice", LocalDate.of(1999, 11, 11)
+        )
+        addUser(
+            "Bob", LocalDate.of(2001, 1, 31)
+        )
+    }

@@ -2,26 +2,24 @@ package com.ubertob.miniktor
 
 import io.ktor.html.*
 import io.ktor.http.*
+import org.jetbrains.exposed.sql.Transaction
 
-class UserController(private val userService: UserService, private val userView: UserView) {
-    fun getAllUsers(): HtmlContent {
-        val users = userService.getAllUsers()
-        return HtmlContent(HttpStatusCode.OK, userView.usersPage(users))
+fun Transaction.getAllUsersPage(): HtmlContent {
+        val users = getAllUsers()
+        return HtmlContent(HttpStatusCode.OK, usersPage(users))
     }
 
-    fun getUserById(id: Int?): HtmlContent {
+    fun Transaction.getUserPage(id: Int?): HtmlContent {
         if (id == null) {
-            return HtmlContent(HttpStatusCode.BadRequest, userView.errorPage("Invalid ID format"))
+            return HtmlContent(HttpStatusCode.BadRequest, errorPage("Invalid ID format"))
         }
 
-        val user = userService.getUserById(id)
+        val user = getUserById(id)
         if (user != null) {
-            return HtmlContent(HttpStatusCode.OK, userView.userPage(user))
+            return HtmlContent(HttpStatusCode.OK, userPage(user))
         } else {
-            return HtmlContent(HttpStatusCode.NotFound, userView.errorPage("User not found"))
+            return HtmlContent(HttpStatusCode.NotFound, errorPage("User not found"))
         }
 
 
     }
-
-}
