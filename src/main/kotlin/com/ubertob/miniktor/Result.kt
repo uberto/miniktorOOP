@@ -12,3 +12,4 @@ sealed interface Error{
 }
 data class RequestError(override val msg: String, val request: HttpMessage): Error
 data class DbError(override val msg: String, val exception: Exception? = null): Error
+data class ResponseError(override val msg: String, val statusCode: HttpStatusCode, val cause: Error): Error
