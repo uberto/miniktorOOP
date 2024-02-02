@@ -2,6 +2,8 @@ package com.ubertob.miniktor
 
 import io.ktor.html.*
 import io.ktor.http.*
+import io.ktor.http.HttpStatusCode.Companion.BadRequest
+import io.ktor.http.HttpStatusCode.Companion.OK
 import org.jetbrains.exposed.sql.Transaction
 
 fun Transaction.getAllUsersPage(): HtmlContent {
@@ -13,16 +15,10 @@ fun Transaction.getAllUsersPage(): HtmlContent {
     }.orThrow()
 }
 
-fun Transaction.getUserPage(id: Int?): HtmlContent =
-    if (id == null) {
-        ResponseError("Invalid ID format", HttpStatusCode.BadRequest)
-            .asFailure()
-    } else {
-        val userRes = getUserById(id)
-        when (userRes) {
-            is Success -> HtmlContent(HttpStatusCode.OK, userPage(userRes.value)).asSuccess()
-            is Failure -> ResponseError("User not found", HttpStatusCode.NotFound, userRes.error).asFailure()
-        }
-    }.orThrow()
 
+fun Transaction.getUserPage(id: Int?): HtmlContent =
+    id.failIfNull(ResponseError("Invalid ID format", BadRequest))
+        .transform { getUserById(it).orThrow() }
+        .transform { HtmlContent(OK, userPage(it)) }
+        .orThrow()
 

@@ -2,7 +2,13 @@ package com.ubertob.miniktor
 
 import io.ktor.http.*
 
-sealed class Result<out T>
+sealed class Result<out T> {
+    fun <U> transform(f: (T) -> U): Result<U> =
+        when(this){
+            is Success -> Success(f(value))
+            is Failure -> this
+        }
+}
 data class Failure(val error: Error) : Result<Nothing>()
 data class Success<T>(val value: T) : Result<T>()
 
@@ -28,4 +34,4 @@ fun <T> Result<T>.orThrow(): T =
 
 data class ResultException(val error: Error) : Exception()
 
-
+fun <T: Any> T?.failIfNull(error: Error): Result<T> =
