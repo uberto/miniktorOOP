@@ -4,17 +4,19 @@ import io.ktor.http.*
 
 sealed class Result<out T> {
     fun <U> transform(f: (T) -> U): Result<U> =
-        when(this){
+        when (this) {
             is Success -> Success(f(value))
             is Failure -> this
         }
 
-    fun <U: @UnsafeVariance T> recover(f: (Error) -> U): T =
-        when(this){
+
+    fun <U : @UnsafeVariance T> recover(f: (Error) -> U): T =
+        when (this) {
             is Success -> value
             is Failure -> f(error)
         }
 }
+
 data class Failure(val error: Error) : Result<Nothing>()
 data class Success<T>(val value: T) : Result<T>()
 
@@ -33,11 +35,11 @@ fun <E : Error> E.asFailure(): Result<Nothing> = Failure(this)
 
 
 fun <T> Result<T>.orThrow(): T =
-    when(this){
+    when (this) {
         is Failure -> throw ResultException(error)
         is Success -> value
     }
 
 data class ResultException(val error: Error) : Exception()
 
-fun <T: Any> T?.failIfNull(error: Error): Result<T> =
+fun <T : Any> T?.failIfNull(error: Error): Result<T> = this?.asSuccess() ?: error.asFailure()
