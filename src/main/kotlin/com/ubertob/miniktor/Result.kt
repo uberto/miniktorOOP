@@ -8,6 +8,12 @@ sealed class Result<out T> {
             is Success -> Success(f(value))
             is Failure -> this
         }
+
+    fun <U: @UnsafeVariance T> recover(f: (Error) -> U): T =
+        when(this){
+            is Success -> value
+            is Failure -> f(error)
+        }
 }
 data class Failure(val error: Error) : Result<Nothing>()
 data class Success<T>(val value: T) : Result<T>()
