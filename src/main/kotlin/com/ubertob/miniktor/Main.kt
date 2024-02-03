@@ -35,7 +35,9 @@ fun main() {
             get("/user/{id}") {
                 val id = call.parameters["id"]
                     ?.toIntOrNull()
-                call.respond(userPageFromDb(id))
+
+                val tx = TransactionRunner {userPageFromDb(id)}
+                call.respond(tx.runOnDb(db))
             }
         }
     }.start(wait = true)
@@ -60,10 +62,15 @@ fun <T, R> inTransaction(db: Database, f: (Transaction).(T) -> R): (T) -> R =
         }
     }
 
-fun < R> inTransaction(db: Database, f: (Transaction).() -> R): () -> R =
+fun <R> inTransaction(db: Database, f: (Transaction).() -> R): () -> R =
     {
         transaction(db) {
             f()
         }
     }
 
+
+data class TransactionRunner<T>(val f: Transaction.() -> T) {
+
+    fun runOnDb(db: Database) = transaction(db) { f }
+}
