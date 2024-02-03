@@ -16,9 +16,9 @@ fun Transaction.getAllUsersPage(): HtmlContent =
 
 fun Transaction.getUserPage(id: Int?): HtmlContent =
     id.failIfNull(ResponseError("Invalid ID format", BadRequest))
-        .bind { getUserById(it) }
-        .transform { htmlUserPage(it) }
-        .recover{ htmlForError(it) }
+        .bind(::getUserById)
+        .transform(::htmlUserPage)
+        .recover(::htmlForError)
 
 private fun htmlUserPage(it: User) = HtmlContent(OK, userPage(it))
 
