@@ -15,6 +15,12 @@ sealed class Result<out T> {
             is Success -> value
             is Failure -> f(error)
         }
+
+    fun <U> bind(f: (T) -> Result<U>): Result<U> =
+        when (this) {
+            is Success -> f(value)
+            is Failure -> this
+        }
 }
 
 data class Failure(val error: Error) : Result<Nothing>()

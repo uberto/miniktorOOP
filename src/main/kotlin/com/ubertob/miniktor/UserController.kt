@@ -16,11 +16,11 @@ fun Transaction.getAllUsersPage(): HtmlContent =
 
 fun Transaction.getUserPage(id: Int?): HtmlContent =
     id.failIfNull(ResponseError("Invalid ID format", BadRequest))
-        .transform { getUserById(it).orThrow() }
-        .transform { htmlContent(it) }
-        .recover(::htmlForError)
+        .bind { getUserById(it) }
+        .transform { htmlUserPage(it) }
+        .recover{ htmlForError(it) }
 
-private fun htmlContent(it: User) = HtmlContent(OK, userPage(it))
+private fun htmlUserPage(it: User) = HtmlContent(OK, userPage(it))
 
 fun htmlForError(error: Error): HtmlContent =
     when (error) {
