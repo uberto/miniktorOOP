@@ -33,9 +33,7 @@ fun main() {
             }
 
             get("/user/{id}") {
-                val id = call.parameters["id"]
-                    ?.toIntOrNull()
-
+                val id = call.parameters["id"]?.toIntOrNull()
                 val tx = TransactionRunner {userPageFromDb(id)}
                 call.respond(tx.runOnDb(db))
             }
