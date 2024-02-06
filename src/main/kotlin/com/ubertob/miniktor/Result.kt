@@ -10,7 +10,7 @@ sealed class Result<out T> {
         }
 
 
-    fun <U : @UnsafeVariance T> recover(f: (Error) -> U): T =
+    fun recover(f: (Error) -> @UnsafeVariance T): T =
         when (this) {
             is Success -> value
             is Failure -> f(error)

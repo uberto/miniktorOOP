@@ -20,7 +20,7 @@ fun Transaction.getUserPage(id: Int?): HtmlContent =
         .transform(::htmlUserPage)
         .recover(::htmlForError)
 
-private fun htmlUserPage(it: User) = HtmlContent(OK, userPage(it))
+fun htmlUserPage(it: User) = HtmlContent(OK, userPage(it))
 
 fun htmlForError(error: Error): HtmlContent =
     when (error) {
