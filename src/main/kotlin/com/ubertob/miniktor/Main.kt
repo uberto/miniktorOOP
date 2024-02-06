@@ -34,8 +34,7 @@ fun main() {
 
             get("/user/{id}") {
                 val id = call.parameters["id"]?.toIntOrNull()
-                val tx = TransactionRunner {userPageFromDb(id)}
-                call.respond(tx.runOnDb(db))
+                call.respond(userPageFromDb(id) )
             }
         }
     }.start(wait = true)
@@ -53,12 +52,12 @@ fun insertSomeData() =
     }
 
 
+fun <A, B, C> partialAppl(f: (A, B) -> C): (A) -> (B) -> C =
+    { a -> { b -> f(a, b) } }
+
+
 fun <T, R> inTransaction(db: Database, f: (Transaction).(T) -> R): (T) -> R =
-    { x: T ->
-        transaction(db) {
-            f(x)
-        }
-    }
+    { x: T -> transaction(db) { f(x) } }
 
 fun <R> inTransaction(db: Database, f: (Transaction).() -> R): () -> R =
     {
@@ -67,8 +66,3 @@ fun <R> inTransaction(db: Database, f: (Transaction).() -> R): () -> R =
         }
     }
 
-
-data class TransactionRunner<T>(val f: Transaction.() -> T) {
-
-    fun runOnDb(db: Database) = transaction(db) { f }
-}
