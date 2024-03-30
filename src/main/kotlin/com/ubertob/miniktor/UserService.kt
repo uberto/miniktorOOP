@@ -1,42 +1,32 @@
 package com.ubertob.miniktor
 
+import org.jetbrains.exposed.sql.Transaction
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDate
 
-class UserService {
-    fun getAllUsers(): List<User> = transaction {
-        Users.selectAll().map {
-            User(
-                id = it[Users.id].value,
-                name = it[Users.name],
-                dateOfBirth = it[Users.dateOfBirth]
-            )
-        }
+fun Transaction.getAllUsers(): List<User> =
+    Users.selectAll().map {
+        User(
+            id = it[Users.id].value,
+            name = it[Users.name],
+            dateOfBirth = it[Users.dateOfBirth]
+        )
     }
 
+fun Transaction.getUserById(id: Int): User? =
+    Users.select { Users.id eq id }
+        .map { User(it[Users.id].value, it[Users.name], it[Users.dateOfBirth]) }
+        .singleOrNull()
 
-    fun addUser(name: String, dateOfBirth: LocalDate): User {
-        var newUser: User? = null
+fun Transaction.addUser(name: String, dateOfBirth: LocalDate): User {
+    val userId = Users.insert {
+        it[Users.name] = name
+        it[Users.dateOfBirth] = dateOfBirth
+    } get Users.id
 
-        transaction {
-            // Assuming that you've called Database.connect somewhere before
-            val userId = Users.insert {
-                it[Users.name] = name
-                it[Users.dateOfBirth] = dateOfBirth
-            } get Users.id
-
-            newUser = User(userId.value, name, dateOfBirth)
-        }
-
-        return newUser ?: throw IllegalStateException("User could not be created")
-    }
-
-    fun getUserById(id: Int): User? = transaction {
-        Users.select { Users.id eq id }
-            .map { User(it[Users.id].value, it[Users.name], it[Users.dateOfBirth]) }
-            .singleOrNull()
-    }
+    return User(userId.value, name, dateOfBirth)
 }
+
