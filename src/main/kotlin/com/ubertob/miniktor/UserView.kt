@@ -22,15 +22,18 @@ class UserView {
     fun usersPage(users: List<User>): HTML.() -> Unit = {
         head {
             title("Users")
-            link(rel = "stylesheet", href = "/static/styles.css", type = "text/css") // Assuming you have some CSS
+            link(rel = "stylesheet", href = "https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css")
         }
         body {
             h1 { +"User List" }
-            div(classes = "user-list") {
+            div(classes = "list-group") {
                 ul {
                     for (user in users) {
-                        li {
-                            +"${user.id} - ${user.name} born on ${user.dateOfBirth}"
+                        li(classes = "list-group-item") {
+                            a("/user/${user.id}") {
+                                +"${user.name} born on ${user.dateOfBirth}"
+                            }
+
                         }
                     }
                 }
@@ -42,18 +45,22 @@ class UserView {
     fun userPage(user: User): HTML.() -> Unit = {
         head {
             title("User Details")
-            link(rel = "stylesheet", href = "/static/styles.css", type = "text/css")
+            link(rel = "stylesheet", href = "https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css")
         }
         body {
-            h1 { +"User Details" }
-            div(classes = "user-details") {
-                h2 { +"ID: ${user.id}" }
-                p { +"Name: ${user.name}" }
-                p { +"Date of Birth: ${user.dateOfBirth}" }
-            }
-            // You might have a link to go back to the user list
-            a(href = "/users") {
-                +"Back to user list"
+            div("container mt-5") {
+                h1 { +"User Details" }
+                div(classes = "card") {
+                    div(classes = "card-body") {
+                        h5(classes = "card-title") { +"Name: ${user.name}" }
+                        p(classes = "card-text") { +"ID: ${user.id}" }
+                        p(classes = "card-text") { +"Date of Birth: ${user.dateOfBirth}" }
+
+                    }
+                }
+                a(href = "/users") {
+                    +"Back to user list"
+                }
             }
         }
     }

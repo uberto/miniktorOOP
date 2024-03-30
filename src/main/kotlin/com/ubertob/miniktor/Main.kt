@@ -13,34 +13,50 @@ import java.time.LocalDate
 fun main() {
     initDatabase()
     val userService = UserService()
-    insertFakeData(userService)
     val userView = UserView()
     val controller = UserController(userService, userView)
-    embeddedServer(Netty, port = 8080) {
-        routing {
-            staticResources("/static", "static")
+    insertModelData(userService)
 
-            get("/") {
-                call.respond(HtmlContent(HttpStatusCode.OK, userView.indexHtml()))
-            }
-
-            get("/users") {
-                controller.getAllUsers(call)
-
-            }
-
-            get("/user/{id}") {
-                controller.getUserById(call)
-            }
-        }
-    }.start(wait = true)
+    val webServer = httpRoutes(userView, controller)
+    webServer.start(wait = true)
 }
 
-fun insertFakeData(userService: UserService) {
+private fun httpRoutes(
+    userView: UserView,
+    controller: UserController
+) = embeddedServer(Netty, port = 8080) {
+    routing {
+        staticResources("/static", "static")
+
+        get("/") {
+            call.respond(HtmlContent(HttpStatusCode.OK, userView.indexHtml()))
+        }
+
+        get("/users") {
+            controller.getAllUsers(call)
+
+        }
+
+        get("/user/{id}") {
+            controller.getUserById(call)
+        }
+    }
+}
+
+fun insertModelData(userService: UserService) {
     userService.addUser(
-        "Alice", LocalDate.of(1999, 11, 11)
+        "Alice", LocalDate.of(2001, 1, 1)
     )
     userService.addUser(
-        "Bob", LocalDate.of(2001, 1, 31)
+        "Bob", LocalDate.of(2002, 2, 2)
+    )
+    userService.addUser(
+        "Charlie", LocalDate.of(2003, 3, 3)
+    )
+    userService.addUser(
+        "Diana", LocalDate.of(2004, 4, 4)
+    )
+    userService.addUser(
+        "Evan", LocalDate.of(2005, 5, 5)
     )
 }
