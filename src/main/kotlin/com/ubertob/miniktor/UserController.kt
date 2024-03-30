@@ -2,25 +2,36 @@ package com.ubertob.miniktor
 
 import io.ktor.html.*
 import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.response.*
 
 class UserController(private val userService: UserService, private val userView: UserView) {
-    fun getAllUsers(): HtmlContent {
+    suspend fun getAllUsers(call: ApplicationCall) {
         val users = userService.getAllUsers()
-        return HtmlContent(HttpStatusCode.OK, userView.usersPage(users))
+        val response = HtmlContent(HttpStatusCode.OK, userView.usersPage(users))
+        call.respond(response)
     }
 
-    fun getUserById(id: Int?): HtmlContent {
+    suspend fun getUserById(call: ApplicationCall) {
+        val id = call.parameters["id"]?.toIntOrNull()
+
         if (id == null) {
-            return HtmlContent(HttpStatusCode.BadRequest, userView.errorPage("Invalid ID format"))
+            call.respond(
+                HtmlContent(
+                    HttpStatusCode.BadRequest, userView.errorPage("Invalid ID format")
+                )
+            )
+            return
         }
 
         val user = userService.getUserById(id)
-        if (user != null) {
-            return HtmlContent(HttpStatusCode.OK, userView.userPage(user))
+        val response = if (user != null) {
+            HtmlContent(HttpStatusCode.OK, userView.userPage(user))
         } else {
-            return HtmlContent(HttpStatusCode.NotFound, userView.errorPage("User not found"))
+            HtmlContent(HttpStatusCode.NotFound, userView.errorPage("User not found"))
         }
 
+        call.respond(response)
 
     }
 

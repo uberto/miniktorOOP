@@ -1,13 +1,13 @@
 package com.ubertob.miniktor
 
+import io.ktor.html.*
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.http.content.*
 import io.ktor.server.netty.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.html.*
-import io.ktor.http.*
 import java.time.LocalDate
 
 fun main() {
@@ -25,12 +25,12 @@ fun main() {
             }
 
             get("/users") {
-                call.respond(controller.getAllUsers())
+                controller.getAllUsers(call)
+
             }
 
             get("/user/{id}") {
-                val id = call.parameters["id"]?.toIntOrNull()
-                call.respond(controller.getUserById(id))
+                controller.getUserById(call)
             }
         }
     }.start(wait = true)
