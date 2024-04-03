@@ -8,28 +8,30 @@ import io.ktor.server.http.content.*
 import io.ktor.server.netty.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.html.HTML
 import java.time.LocalDate
 
 fun main() {
-    initDatabase()
+    val db = initDatabase()
     val userService = UserService()
     val userView = UserView()
     val controller = UserController(userService, userView)
     insertModelData(userService)
 
-    val webServer = httpRoutes(userView, controller)
+    val webServer = httpRoutes(userView, controller, DbRunner(db, ::getUserById))
     webServer.start(wait = true)
 }
 
 private fun httpRoutes(
     userView: UserView,
-    controller: UserController
+    controller: UserController,
+    getUser: (Int) -> User?
 ) = embeddedServer(Netty, port = 8080) {
     routing {
         staticResources("/static", "static")
 
         get("/") {
-            call.respond(HtmlContent(HttpStatusCode.OK, userView.indexHtml()))
+            call.respond(okHttpContent(userView.indexHtml()))
         }
 
         get("/users") {
@@ -38,10 +40,28 @@ private fun httpRoutes(
         }
 
         get("/user/{id}") {
-            controller.returnUserDetails(call)
+//            req -> id
+//            id -> User
+//            User -> Html
+//            Html -> HttpResp
+//
+            val res = getUserId(call.parameters)?.let { id ->
+                getUser( id)
+            }?.let { user ->
+                userPage(user)
+            }?.let { htmlFn ->
+                okHttpContent(htmlFn)
+            } ?: HtmlContent(HttpStatusCode.NotFound, errorPage("User not found"))
+
+            call.respond(res)
         }
     }
 }
+
+private fun okHttpContent(htmlFn: HTML.() -> Unit) = HtmlContent(HttpStatusCode.OK, htmlFn)
+
+private fun getUserId(parameters: Parameters) =
+    parameters["id"]?.toIntOrNull()
 
 fun insertModelData(userService: UserService) {
     userService.addUser(
@@ -60,3 +80,6 @@ fun insertModelData(userService: UserService) {
         "Evan", LocalDate.of(2005, 5, 5)
     )
 }
+
+
+
