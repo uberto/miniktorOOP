@@ -7,3 +7,9 @@ data class DbRunner<B, C>(private val db: Database,
     override fun invoke(b: B): C = dbFn(db, b)
 
 }
+
+data class DbRunner1< C>(private val db: Database,
+                          val dbFn: (Database) -> C): () -> C {
+    override fun invoke(): C = dbFn(db)
+
+}
