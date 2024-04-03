@@ -16,12 +16,12 @@ fun main() {
     val db = initDatabase()
     insertModelData(db)
 
-    val webServer = httpRoutes(DbRunner(db, ::getUserById),  DbRunner1(db, ::getAllUsers))
+    val webServer = httpRoutes(DbRunner(db, ::getUserById), DbRunner1(db, ::getAllUsers))
     webServer.start(wait = true)
 }
 
 private fun httpRoutes(
-    userFetcher: (Int) -> User?,
+    userFetcher: (Int) -> Outcome<User>,
     allUsersFetcher: () -> List<User>
 ) = embeddedServer(Netty, port = 8080) {
     routing {
@@ -33,7 +33,7 @@ private fun httpRoutes(
 
         get("/users") {
             val response = allUsersPage(allUsersFetcher())
-            call.respond<HtmlContent>(response)
+            call.respond(response)
 
         }
 
@@ -45,22 +45,25 @@ private fun httpRoutes(
 
             call.respond(
                 getUserId(call.parameters)
-                    ?.let(userFetcher)
-                    ?.let(::userPage)
-                    ?.let(::okHttpContent)
-                    ?: HtmlContent(HttpStatusCode.NotFound, errorPage("User not found"))
+                    .bind(userFetcher)
+                    .transform(::userPage)
+                    .transform(::okHttpContent)
+                    .recover{ msg -> HtmlContent(HttpStatusCode.NotFound, errorPage(msg) )}
             )
         }
     }
 }
+
+
 
 private fun allUsersPage(users: List<User>) =
     HtmlContent(HttpStatusCode.OK, usersPage(users))
 
 private fun okHttpContent(htmlFn: HTML.() -> Unit) = HtmlContent(HttpStatusCode.OK, htmlFn)
 
-private fun getUserId(parameters: Parameters) =
-    parameters["id"]?.toIntOrNull()
+private fun getUserId(parameters: Parameters): Outcome<Int> =
+    parameters["id"]?.toIntOrNull()?.let { Success(it) } ?: Failure("No id in the parameters!")
+
 
 fun insertModelData(db: Database) {
     addUser(db, "Alice", LocalDate.of(2001, 1, 1))

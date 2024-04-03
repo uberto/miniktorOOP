@@ -23,11 +23,17 @@ fun addUser(db: Database, name: String, dateOfBirth: LocalDate): User {
     return newUser ?: throw IllegalStateException("User could not be created")
 }
 
-fun getUserById(db: Database, id: Int): User? = transaction(db) {
-    Users.select { Users.id eq id }
-        .map { User(it[Users.id].value, it[Users.name], it[Users.dateOfBirth]) }
-        .singleOrNull()
-}
+fun getUserById(db: Database, id: Int): Outcome<User> =
+    try {
+        transaction(db) {
+            Users.select { Users.id eq id }
+                .map { User(it[Users.id].value, it[Users.name], it[Users.dateOfBirth]) }
+                .singleOrNull()
+        }?.let { Success(it) } ?: Failure("User $id not found!")
+
+    } catch (e: Exception) {
+        Failure("Failure while retrieving user $id - $e")
+    }
 
 fun getAllUsers(db: Database): List<User> = transaction(db) {
     Users.selectAll().map {
