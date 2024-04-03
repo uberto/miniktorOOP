@@ -6,13 +6,13 @@ import io.ktor.server.application.*
 import io.ktor.server.response.*
 
 class UserController(private val userService: UserService, private val userView: UserView) {
-    suspend fun returnAllUsers(call: ApplicationCall) {
+    suspend fun respondWithAllUsers(call: ApplicationCall) {
         val users = userService.getAllUsers()
         val response = HtmlContent(HttpStatusCode.OK, userView.usersPage(users))
         call.respond(response)
     }
 
-    suspend fun returnUserDetails(call: ApplicationCall) {
+    suspend fun respondWithUserDetails(call: ApplicationCall) {
         val id = call.parameters["id"]?.toIntOrNull()
 
         if (id == null) {

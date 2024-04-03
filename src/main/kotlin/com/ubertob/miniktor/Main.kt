@@ -33,12 +33,11 @@ private fun httpRoutes(
         }
 
         get("/users") {
-            controller.returnAllUsers(call)
-
+            controller.respondWithAllUsers(call)
         }
 
         get("/user/{id}") {
-            controller.returnUserDetails(call)
+            controller.respondWithUserDetails(call)
         }
     }
 }
