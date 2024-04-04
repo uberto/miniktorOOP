@@ -1,5 +1,6 @@
 package com.ubertob.miniktor
 
+import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
@@ -40,6 +41,16 @@ class UserService {
             .singleOrNull()
     }
 
+}
+
+fun getUserById(db: Database, id: Int): Outcome<User> = try {
+    transaction(db) {
+        Users.select { Users.id eq id }
+            .map { User(it[Users.id].value, it[Users.name], it[Users.dateOfBirth]) }
+            .singleOrNull()?.let { Success(it) } ?: Failure("User with $id not found!")
+    }
+} catch (e: Exception) {
+    Failure("Database error $e")
 }
 
 

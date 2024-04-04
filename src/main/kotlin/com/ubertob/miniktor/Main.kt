@@ -8,22 +8,25 @@ import io.ktor.server.http.content.*
 import io.ktor.server.netty.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import org.jetbrains.exposed.sql.Database
 import java.time.LocalDate
 
 fun main() {
-    initDatabase()
+    val db = initDatabase()
     val userService = UserService()
     val userView = UserView()
     val controller = UserController(userService, userView)
     insertModelData(userService)
 
-    val webServer = httpRoutes(userView, controller)
+    val userFetcher = DbRunner(db, ::getUserById)
+    val webServer = httpRoutes(userView, controller, userFetcher)
     webServer.start(wait = true)
 }
 
 private fun httpRoutes(
     userView: UserView,
-    controller: UserController
+    controller: UserController,
+    userFetcher: (Int) -> Outcome<User>
 ) = embeddedServer(Netty, port = 8080) {
     routing {
         staticResources("/static", "static")
@@ -37,10 +40,27 @@ private fun httpRoutes(
         }
 
         get("/user/{id}") {
-            controller.respondWithUserDetails(call)
+            /*
+            req -> id
+            id -> user
+            user -> html
+            html -> httpresponse
+             */
+
+            val res: HtmlContent = getId(call.parameters)
+                .bind(userFetcher)
+                .transform(::userPage)
+                .transform { html -> HtmlContent(HttpStatusCode.OK, html) }
+                .recover { msg -> HtmlContent(HttpStatusCode.NotFound, userView.errorPage(msg))
+                }
+
+            call.respond(res)
         }
     }
 }
+
+private fun getId(parameters: Parameters): Outcome<Int> =
+    parameters["id"]?.toIntOrNull()?.let { Success(it) } ?: Failure("id not present!")
 
 fun insertModelData(userService: UserService) {
     userService.addUser(
@@ -59,3 +79,35 @@ fun insertModelData(userService: UserService) {
         "Evan", LocalDate.of(2005, 5, 5)
     )
 }
+
+
+data class DbRunner<A, B>(val db: Database, val fn: (Database, A) -> B) : (A) -> B {
+    override fun invoke(a: A): B = fn(db, a)
+
+}
+
+sealed interface Outcome<out T> {
+
+    fun <U> transform(fn: (T) -> U): Outcome<U> =
+        when (this) {
+            is Failure -> this
+            is Success -> Success(fn(value))
+        }
+
+    fun <U> bind(fn: (T) -> Outcome<U>): Outcome<U> =
+        when (this) {
+            is Failure -> this
+            is Success -> fn(value)
+        }
+}
+
+fun <T> Outcome<T>.recover(fn: (String) -> T): T =
+    when (this) {
+        is Failure -> fn(this.msg)
+        is Success -> this.value
+    }
+
+data class Success<T>(val value: T) : Outcome<T>
+data class Failure(val msg: String) : Outcome<Nothing>
+
+
