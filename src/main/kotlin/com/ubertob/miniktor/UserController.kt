@@ -12,27 +12,4 @@ class UserController(private val userService: UserService, private val userView:
         call.respond(response)
     }
 
-    suspend fun respondWithUserDetails(call: ApplicationCall) {
-        val id = call.parameters["id"]?.toIntOrNull()
-
-        if (id == null) {
-            call.respond(
-                HtmlContent(
-                    HttpStatusCode.BadRequest, userView.errorPage("Invalid ID format")
-                )
-            )
-            return
-        }
-
-        val user = userService.getUserById(id)
-        val response = if (user != null) {
-            HtmlContent(HttpStatusCode.OK, userView.userPage(user))
-        } else {
-            HtmlContent(HttpStatusCode.NotFound, userView.errorPage("User not found"))
-        }
-
-        call.respond(response)
-
-    }
-
 }

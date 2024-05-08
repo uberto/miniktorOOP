@@ -19,12 +19,11 @@ fun main() {
     insertModelData(userService)
 
     val userFetcher = DbRunner(db, ::getUserById)
-    val webServer = httpRoutes(userView, controller, userFetcher)
+    val webServer = httpRoutes(controller, userFetcher)
     webServer.start(wait = true)
 }
 
 private fun httpRoutes(
-    userView: UserView,
     controller: UserController,
     userFetcher: (Int) -> Outcome<User>
 ) = embeddedServer(Netty, port = 8080) {
@@ -32,7 +31,7 @@ private fun httpRoutes(
         staticResources("/static", "static")
 
         get("/") {
-            call.respond(HtmlContent(HttpStatusCode.OK, userView.indexHtml()))
+            call.respond(HtmlContent(HttpStatusCode.OK, indexHtml()))
         }
 
         get("/users") {
@@ -51,8 +50,7 @@ private fun httpRoutes(
                 .bind(userFetcher)
                 .transform(::userPage)
                 .transform { html -> HtmlContent(HttpStatusCode.OK, html) }
-                .recover { msg -> HtmlContent(HttpStatusCode.NotFound, userView.errorPage(msg))
-                }
+                .recover { msg -> HtmlContent(HttpStatusCode.NotFound, errorPage(msg)) }
 
             call.respond(res)
         }
@@ -85,29 +83,5 @@ data class DbRunner<A, B>(val db: Database, val fn: (Database, A) -> B) : (A) ->
     override fun invoke(a: A): B = fn(db, a)
 
 }
-
-sealed interface Outcome<out T> {
-
-    fun <U> transform(fn: (T) -> U): Outcome<U> =
-        when (this) {
-            is Failure -> this
-            is Success -> Success(fn(value))
-        }
-
-    fun <U> bind(fn: (T) -> Outcome<U>): Outcome<U> =
-        when (this) {
-            is Failure -> this
-            is Success -> fn(value)
-        }
-}
-
-fun <T> Outcome<T>.recover(fn: (String) -> T): T =
-    when (this) {
-        is Failure -> fn(this.msg)
-        is Success -> this.value
-    }
-
-data class Success<T>(val value: T) : Outcome<T>
-data class Failure(val msg: String) : Outcome<Nothing>
 
 
