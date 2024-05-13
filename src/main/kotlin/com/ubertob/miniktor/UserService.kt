@@ -1,5 +1,6 @@
 package com.ubertob.miniktor
 
+import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
@@ -34,13 +35,20 @@ class UserService {
         return newUser ?: throw IllegalStateException("User could not be created")
     }
 
-    fun getUserById(id: Int): User? = transaction {
-        Users.select { Users.id eq id }
-            .map { User(it[Users.id].value, it[Users.name], it[Users.dateOfBirth]) }
-            .singleOrNull()
-    }
+
 
 }
+
+fun getUserById(db: Database, id: Int): Outcome<User> =
+    try {
+        transaction(db) {
+                Users.select { Users.id eq id }
+                    .map { User(it[Users.id].value, it[Users.name], it[Users.dateOfBirth]) }
+                    .singleOrNull()
+            }?.asSuccess() ?: Failure("User $id not present!")
+    } catch (e: Exception){
+        Failure("Error during db: $e")
+    }
 
 
 

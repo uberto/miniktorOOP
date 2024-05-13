@@ -11,19 +11,21 @@ import io.ktor.server.routing.*
 import java.time.LocalDate
 
 fun main() {
-    initDatabase()
+    val db = initDatabase()
     val userService = UserService()
     val userView = UserView()
     val controller = UserController(userService, userView)
     insertModelData(userService)
 
-    val webServer = httpRoutes(userView, controller)
+    val userFetcher = partialApply(::getUserById, db)
+    val webServer = httpRoutes(userView, controller, userFetcher)
     webServer.start(wait = true)
 }
 
 private fun httpRoutes(
     userView: UserView,
-    controller: UserController
+    controller: UserController,
+    userFetcher: (Int) -> Outcome<User>
 ) = embeddedServer(Netty, port = 8080) {
     routing {
         staticResources("/static", "static")
@@ -37,10 +39,32 @@ private fun httpRoutes(
         }
 
         get("/user/{id}") {
-            controller.respondWithUserDetails(call)
+            // req -> id
+            // id -> user
+            // user -> pageHtml
+            // page -> response
+
+            getIdFromReq(call)
+                .bind { id -> userFetcher(id) }
+                .transform { user -> getUserPage(user) }
+                .recover { msg -> HtmlContent(HttpStatusCode.NotFound, errorPage(msg)) }
+                .also { html -> call.respond(html) }
+
         }
     }
 }
+
+fun <T> Outcome<T>.recover(fn: (String) -> T): T =
+    when (this) {
+        is Failure -> fn(msg)
+        is Success -> value
+    }
+
+
+fun getIdFromReq(applicationCall: ApplicationCall): Outcome<Int> =
+    applicationCall.parameters["id"]?.toIntOrNull()?.asSuccess()
+        ?: Failure("id not present!")
+
 
 fun insertModelData(userService: UserService) {
     userService.addUser(
@@ -59,3 +83,29 @@ fun insertModelData(userService: UserService) {
         "Evan", LocalDate.of(2005, 5, 5)
     )
 }
+
+
+fun <A, B, C> partialApply(fn: (A, B) -> C, a: A): (B) -> C =
+    { b: B -> fn(a, b) }
+
+
+fun <T> T.asSuccess(): Success<T> = Success(this)
+
+sealed interface Outcome<out T> {
+    fun <U> transform(fn: (T) -> U): Outcome<U> =
+        when (this) {
+            is Failure -> this
+            is Success -> Success(fn(this.value))
+        }
+
+
+    fun <U> bind(fn: (T) -> Outcome<U>): Outcome<U> =
+        when (this) {
+            is Failure -> this
+            is Success -> fn(this.value)
+        }
+
+}
+
+data class Success<T>(val value: T) : Outcome<T>
+data class Failure(val msg: String) : Outcome<Nothing>
